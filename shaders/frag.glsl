@@ -1,7 +1,9 @@
 #version 410 core
 
-out vec4 FragColor;
+in vec3 pos;
+uniform float time;
+out vec4 frag_colour;
 
 void main() {
-    FragColor = vec4(0.0, 0.7, 0.3, 1.0);
+     frag_colour = vec4(pos, 1.0);
 }

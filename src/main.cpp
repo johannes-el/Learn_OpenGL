@@ -1,6 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <cassert>
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -77,6 +78,7 @@ int main() {
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+  glfwWindowHint(GLFW_SAMPLES, 8);
 
   GLFWwindow* window = glfwCreateWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Learn OpenGL", nullptr, nullptr);
   if (window == nullptr) {
@@ -99,6 +101,9 @@ int main() {
 
   GLuint program = CreateShaderProgram("./shaders/vert.glsl", "./shaders/frag.glsl");
 
+  int time_loc = glGetUniformLocation(program, "time");
+  assert (time_loc > -1);
+
   GLuint VAO;
   glGenVertexArrays(1, &VAO);
   glBindVertexArray(VAO);
@@ -113,12 +118,30 @@ int main() {
 
   glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 
+  double prev_s = glfwGetTime();
+  double title_countdown_s = 0.1;
+
   while (!glfwWindowShouldClose(window)) {
+
+    double curr_s = glfwGetTime();
+    double elapsed_s = curr_s - prev_s;
+    prev_s = curr_s;
+
+    title_countdown_s -= elapsed_s;
+    if (title_countdown_s <= 0.0 && elapsed_s > 0.0) {
+      double fps = 1.0 / elapsed_s;
+      char tmp[256];
+      sprintf(tmp, "FPS %.2lf", fps);
+      glfwSetWindowTitle(window, tmp);
+      title_countdown_s = 0.1;
+    }
+
     glfwPollEvents();
     glClearColor(0.5f, 0.7f, 0.8f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
     glUseProgram(program);
+    glUniform1f(time_loc, (float)curr_s);
 
     glBindVertexArray(VAO);
     glDrawArrays(GL_TRIANGLES, 0, 3);
