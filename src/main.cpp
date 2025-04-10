@@ -2,9 +2,11 @@
 #include <fstream>
 #include <vector>
 #include <cassert>
+#include <cmath>
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#include "./stb_image.h"
 
 std::string GetShaderSource(const std::string file_name) {
   std::string result = "";
@@ -94,24 +96,32 @@ int main() {
   }
 
   std::vector<GLfloat> vertices = {
-    -0.5f, -0.5f, 0.0f,  // vertex 1
-    0.5f, -0.5f, 0.0f,   // vertex 2
-    0.0f,  0.5f, 0.0f    // vertex 3
+    -0.5f, -0.5f, 0.0f,
+    -0.5f,  0.5f, 0.0f,
+    0.5f, -0.5f, 0.0f,
+    0.5f,  0.5f, 0.0f
+  };
+
+  std::vector<GLuint> indices = {
+    0, 2, 1,
+    1, 2, 3
   };
 
   GLuint program = CreateShaderProgram("./shaders/vert.glsl", "./shaders/frag.glsl");
 
-  int time_loc = glGetUniformLocation(program, "time");
-  assert (time_loc > -1);
+  GLuint VAO, VBO, EBO;
 
-  GLuint VAO;
   glGenVertexArrays(1, &VAO);
+  glGenBuffers(1, &VBO);
+  glGenBuffers(1, &EBO);
+
   glBindVertexArray(VAO);
 
-  GLuint VBO;
-  glGenBuffers(1, &VBO);
   glBindBuffer(GL_ARRAY_BUFFER, VBO);
   glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(GLfloat), vertices.data(), GL_STATIC_DRAW);
+
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(GLuint), indices.data(), GL_STATIC_DRAW);
 
   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
   glEnableVertexAttribArray(0);
@@ -120,6 +130,31 @@ int main() {
 
   double prev_s = glfwGetTime();
   double title_countdown_s = 0.1;
+
+  int widthImg, heightImg, numColCh;
+  unsigned char* bytes = stbi_load("./textures/github.png", &widthImg, &heightImg, &numColCh, 0);
+
+  GLuint texture;
+  glGenTextures(1, &texture);
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, texture);
+
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, widthImg, heightImg, 0, GL_RGBA, GL_UNSIGNED_BYTE, bytes);
+  glGenerateMipmap(GL_TEXTURE_2D);
+
+  stbi_image_free(bytes);
+  glBindTexture(GL_TEXTURE_2D, 0);
+
+  /*
+  GLuint tex0Uni = glGetUniformLocation(shaderProgram.ID, "tex0");
+  shaderProgram.Activate();
+  glUniform1i(tex0Uni, 0);
+  */
 
   while (!glfwWindowShouldClose(window)) {
 
@@ -141,13 +176,18 @@ int main() {
     glClear(GL_COLOR_BUFFER_BIT);
 
     glUseProgram(program);
-    glUniform1f(time_loc, (float)curr_s);
 
     glBindVertexArray(VAO);
-    glDrawArrays(GL_TRIANGLES, 0, 3);
+    glDrawElements(GL_TRIANGLES, 9, GL_UNSIGNED_INT, 0);
 
     glfwSwapBuffers(window);
   }
+
+  glDeleteVertexArrays(1, &VAO);
+  glDeleteBuffers(1, &VBO);
+  glDeleteBuffers(1, &EBO);
+
+  glDeleteTextures(1, &texture);
 
   glfwTerminate();
   return 0;
