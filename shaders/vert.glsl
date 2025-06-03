@@ -1,10 +1,17 @@
 #version 410 core
 
-in vec3 vertex_position;
-out vec3 pos;
+layout(location = 0) in vec3 aPos;
+layout(location = 1) in vec2 aTexCoord;
+layout(location = 2) in vec3 aColor;
 
-void main() {
-  pos = vertex_position;
+out vec2 TexCoord;
+out vec3 ourColor;
 
-  gl_Position = vec4(pos, 1.0);
+uniform mat4 transform;
+
+void main()
+{
+    gl_Position = transform * vec4(aPos, 1.0);
+    TexCoord = aTexCoord;
+    ourColor = aColor;
 }
